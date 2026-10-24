@@ -13,17 +13,20 @@
             font-family: sans-serif;
             user-select: none;
             -webkit-user-select: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
         }
         #gameContainer {
             position: relative;
-            width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
+            background-color: #87CEEB;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden;
         }
         #gameCanvas {
             display: block;
-            width: 100%;
-            background-color: #87CEEB;
         }
         #ui {
             position: absolute;
@@ -37,31 +40,86 @@
             z-index: 10;
             display: none;
         }
-        /* 共通の画面オーバーレイ（トップ・オーディオ画面） */
         .screen-overlay {
             position: absolute;
             top: 0;
             left: 0;
-            background-color: #87CEEB;
+            width: 100%;
+            height: 100%;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: space-between; /* 🛠️ 上下にきれいに引き伸ばす配置に変更 */
             align-items: center;
             z-index: 20;
+            box-sizing: border-box;
+            padding: 25px 15px; /* 🛠️ 上下の余白を確保 */
+        }
+        #audioInitScreen {
+            background-color: #87CEEB;
+            justify-content: center; /* 最初の画面だけ中央配置 */
         }
         #topScreen {
-            display: none; /* 最初はオーディオ画面を出すため非表示 */
+            background-color: rgba(0, 0, 0, 0.75); 
+            display: none; 
         }
         .screen-title {
-            font-size: 36px;
+            font-size: 42px; /* 🛠️ タイトルをさらに大きく強調 */
             font-weight: bold;
             color: white;
-            margin-bottom: 30px;
             text-shadow: 3px 3px 0px #ff4757, 5px 5px 0px rgba(0,0,0,0.2);
             text-align: center;
+            letter-spacing: 6px;
+            margin: 0;
+            line-height: 1.1;
+            padding-top: 5px; /* 🛠️ 最上部へ寄せる */
+        }
+        
+        /* 🛠️【変更】説明書きエリアを全体的にワイド＆大型化 */
+        #instructionContainer {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 12px 18px;
+            border-radius: 14px;
+            width: 420px; /* 🛠️ 横幅を320pxから420pxに拡大 */
+            color: #fff;
+            font-size: 16px; /* 🛠️ 文字サイズを13pxから16pxに大幅アップ */
+            box-sizing: border-box;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .desc-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px; /* 🛠️ 行間を広げて見やすく */
+        }
+        .desc-row:last-child {
+            margin-bottom: 0;
+        }
+        /* 🛠️【変更】アイコン画像も大きく拡大 */
+        .desc-img {
+            width: 32px; /* 🛠️ 24pxから32pxに拡大 */
+            height: 32px;
+            object-fit: contain;
+            margin-right: 15px;
+            flex-shrink: 0;
+            background: rgba(255,255,255,0.2);
+            border-radius: 6px;
+            padding: 3px;
+        }
+
+        #rankingContainer {
+            background: rgba(0,0,0,0.85); 
+            padding: 12px 20px; 
+            border-radius: 10px; 
+            width: 360px; 
+            text-align: left; 
+            font-size: 15px; 
+            color: #fff; 
+            box-sizing: border-box;
+            border: 1px solid #ff4757;
+            display: none;
         }
         .action-btn {
-            padding: 15px 40px;
+            padding: 12px 75px;
             font-size: 24px;
             font-weight: bold;
             color: white;
@@ -72,6 +130,7 @@
             cursor: pointer;
             outline: none;
             transition: 0.1s;
+            margin-bottom: 5px;
         }
         .action-btn:active {
             box-shadow: 0 2px #ea2027, 0 5px 10px rgba(0,0,0,0.3);
@@ -83,24 +142,58 @@
     <div id="gameContainer">
         <!-- スコア表示 -->
         <div id="ui">SCORE: <span id="score">0</span>m</div>
-        
-        <!-- 🔊 ブラウザの音声再生制限を解除するための初期画面 -->
-        <div id="audioInitScreen" class="screen-overlay" style="width: 100%; height: 100%;">
-            <div class="screen-title">音声の有効化</div>
+
+        <!-- ブラウザの音制限解除画面 -->
+        <div id="audioInitScreen" class="screen-overlay">
+            <div class="screen-title" style="margin-bottom: 20px;">イガ走</div>
             <button id="audioInitBtn" class="action-btn">ゲームを読み込む</button>
         </div>
 
-        <!-- 🏠 タイトル画面 -->
+        <!-- タイトル ＆ ゲームオーバー共通画面 -->
         <div id="topScreen" class="screen-overlay">
             <div id="gameTitle" class="screen-title">イガ走</div>
+            
+            <!-- 文字も画像も大きくなった説明書き -->
+            <div id="instructionContainer">
+                <div class="desc-row">
+                    <img src="player.png" class="desc-img" alt="Player">
+                    <div><strong>2段ジャンプ:</strong> 画面を2回タップ！</div>
+                </div>
+                <div class="desc-row">
+                    <img src="coin.png" class="desc-img" alt="Coin">
+                    <div><strong>スパイダー:</strong> 触ると10mスコアUP！</div>
+                </div>
+                <div class="desc-row">
+                    <img src="enemy1.png" class="desc-img" alt="かずき">
+                    <div><strong>かずき:</strong> 足場でじっとしてるぞ！</div>
+                </div>
+                <div class="desc-row">
+                    <img src="enemy2.png" class="desc-img" alt="いおり">
+                    <div><strong>いおり:</strong> 上下に動くぞ！</div>
+                </div>
+                <div class="desc-row">
+                    <img src="enemy3.png" class="desc-img" alt="せいや">
+                    <div><strong>せいや:</strong> 突進してくるぞ！</div>
+                </div>
+                <div class="desc-row">
+                    <img src="enemy4.png" class="desc-img" alt="そうた">
+                    <div><strong>そうた:</strong> 大きいから気をつけろ！</div>
+                </div>
+            </div>
+
+            <!-- ランキング表示エリア（ゲームオーバー時のみ表示） -->
+            <div id="rankingContainer">
+                <div style="text-align: center; font-weight: bold; color: #ffeb3b; margin-bottom: 6px; font-size: 15px;">🏆 TOP 10 RANKING</div>
+                <ol id="rankingList" style="margin: 0; padding-left: 25px; line-height: 1.5; color: #ccc;"></ol>
+            </div>
+
             <button id="startBtn" class="action-btn">走れ!!</button>
         </div>
         
-        <!-- ゲーム描画キャンバス -->
+        <!-- ゲーム描画用キャンバス -->
         <canvas id="gameCanvas"></canvas>
     </div>
     
-    <!-- ⚠️ Firebase関連の script タグはすべて削除しました -->
     <script src="main.js"></script>
 </body>
 </html>
