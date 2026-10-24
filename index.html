@@ -48,22 +48,22 @@
             height: 100%;
             display: flex;
             flex-direction: column;
-            justify-content: space-between; /* 🛠️ 上下にきれいに引き伸ばす配置に変更 */
+            justify-content: space-between;
             align-items: center;
             z-index: 20;
             box-sizing: border-box;
-            padding: 25px 15px; /* 🛠️ 上下の余白を確保 */
+            padding: 25px 15px;
         }
         #audioInitScreen {
             background-color: #87CEEB;
-            justify-content: center; /* 最初の画面だけ中央配置 */
+            justify-content: center;
         }
         #topScreen {
             background-color: rgba(0, 0, 0, 0.75); 
             display: none; 
         }
         .screen-title {
-            font-size: 42px; /* 🛠️ タイトルをさらに大きく強調 */
+            font-size: 42px;
             font-weight: bold;
             color: white;
             text-shadow: 3px 3px 0px #ff4757, 5px 5px 0px rgba(0,0,0,0.2);
@@ -71,32 +71,30 @@
             letter-spacing: 6px;
             margin: 0;
             line-height: 1.1;
-            padding-top: 5px; /* 🛠️ 最上部へ寄せる */
+            padding-top: 5px;
         }
         
-        /* 🛠️【変更】説明書きエリアを全体的にワイド＆大型化 */
         #instructionContainer {
             background: rgba(255, 255, 255, 0.12);
             border: 1px solid rgba(255, 255, 255, 0.25);
             padding: 12px 18px;
             border-radius: 14px;
-            width: 420px; /* 🛠️ 横幅を320pxから420pxに拡大 */
+            width: 420px;
             color: #fff;
-            font-size: 16px; /* 🛠️ 文字サイズを13pxから16pxに大幅アップ */
+            font-size: 16px;
             box-sizing: border-box;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
         .desc-row {
             display: flex;
             align-items: center;
-            margin-bottom: 8px; /* 🛠️ 行間を広げて見やすく */
+            margin-bottom: 8px;
         }
         .desc-row:last-child {
             margin-bottom: 0;
         }
-        /* 🛠️【変更】アイコン画像も大きく拡大 */
         .desc-img {
-            width: 32px; /* 🛠️ 24pxから32pxに拡大 */
+            width: 32px;
             height: 32px;
             object-fit: contain;
             margin-right: 15px;
@@ -118,6 +116,37 @@
             border: 1px solid #ff4757;
             display: none;
         }
+        
+        #nameInputForm {
+            display: none;
+            background: rgba(255, 71, 87, 0.2);
+            border: 2px solid #ff4757;
+            padding: 15px;
+            border-radius: 14px;
+            width: 360px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        #nameInputForm label {
+            color: #ffeb3b;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        #playerInputName {
+            width: 80%;
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 25px;
+            text-align: center;
+            outline: none;
+            background: #fff;
+            color: #333;
+            font-weight: bold;
+        }
+
         .action-btn {
             padding: 12px 75px;
             font-size: 24px;
@@ -153,7 +182,7 @@
         <div id="topScreen" class="screen-overlay">
             <div id="gameTitle" class="screen-title">イガ走</div>
             
-            <!-- 文字も画像も大きくなった説明書き -->
+            <!-- 説明書き（タイトル時のみ表示） -->
             <div id="instructionContainer">
                 <div class="desc-row">
                     <img src="player.png" class="desc-img" alt="Player">
@@ -181,6 +210,12 @@
                 </div>
             </div>
 
+            <!-- 名前入力ボックス -->
+            <div id="nameInputForm">
+                <label>🏆 ランクイン！名前を入力してください</label>
+                <input type="text" id="playerInputName" placeholder="ななしのランナー" maxlength="10">
+            </div>
+
             <!-- ランキング表示エリア（ゲームオーバー時のみ表示） -->
             <div id="rankingContainer">
                 <div style="text-align: center; font-weight: bold; color: #ffeb3b; margin-bottom: 6px; font-size: 15px;">🏆 TOP 10 RANKING</div>
@@ -194,6 +229,11 @@
         <canvas id="gameCanvas"></canvas>
     </div>
     
+    <!-- Firebase SDK (Compat版) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    
+    <!-- ゲームのメインスクリプト -->
     <script src="main.js"></script>
 </body>
 </html>
