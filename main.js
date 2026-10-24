@@ -237,7 +237,7 @@ function update() {
     
     let onPlatform = false;
     
-    if (platforms.length > 0 && platforms.x + platforms.width < 0) platforms.shift();
+    if (platforms.length > 0 && platforms[0].x + platforms[0].width < 0) platforms.shift();
     while (platforms.length < 5) generatePlatform();
     
     platforms.forEach(plat => { 
@@ -260,8 +260,10 @@ function update() {
         if (coin.alive && isColliding(player, coin)) { 
             coin.alive = false; 
             score += 15; 
-            coinSe.currentTime = 0; 
-            coinSe.play().catch(e => {}); 
+            try {
+                coinSe.currentTime = 0; 
+                coinSe.play().catch(e => {}); 
+            } catch(e) {}
         } 
     });
     coins = coins.filter(c => c.x + c.width > 0);
