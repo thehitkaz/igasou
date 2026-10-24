@@ -10,7 +10,7 @@
         #gameCanvas { display: block; width: 100%; background-color: #87CEEB; }
         #ui { position: absolute; top: 10px; left: 10px; color: white; font-size: 20px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); pointer-events: none; z-index: 10; display: none; }
         #audioInitScreen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #222; display: flex; justify-content: center; align-items: center; z-index: 30; }
-        #audioInitBtn { padding: 15px 30px; font-size: 20px; font-weight: bold; color: white; background-color: #1e90ff; border: none; border-radius: 5px; cursor: pointer; }
+        #audioInitBtn { padding: 15px 30px; font-size: 20px; font-weight: bold; color: white; background-color: #555; border: none; border-radius: 5px; cursor: not-allowed; }
         #topScreen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(135, 206, 235, 1); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; display: none; }
         #gameTitle { font-size: 44px; font-weight: bold; color: white; margin-bottom: 12px; text-shadow: 3px 3px 0px #ff4757, 5px 5px 0px rgba(0,0,0,0.2); text-align: center; letter-spacing: 4px; }
         #guideContainer { background-color: rgba(0, 0, 0, 0.4); border-radius: 15px; padding: 12px; margin-bottom: 20px; width: 85%; max-width: 480px; color: white; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
@@ -24,7 +24,7 @@
 <body>
     <div id="gameContainer">
         <div id="ui">SCORE: <span id="score">0</span>m</div>
-        <div id="audioInitScreen"><button id="audioInitBtn" disabled style="background-color: #555; cursor: not-allowed;">読み込み中...</button></div>
+        <div id="audioInitScreen"><button id="audioInitBtn" disabled>読み込み中...</button></div>
         <div id="topScreen">
             <div id="gameTitle">イガ走</div>
             <div id="guideContainer">
@@ -39,28 +39,30 @@
         </div>
         <canvas id="gameCanvas"></canvas>
     </div>
-
     <script>
-        // 💡 対策：Firebaseのダウンロードを完全に1つずつ順番に待ちます
+        // Firebaseとmain.jsのダウンロードを完全に1つずつ順番に待ちます
         function loadScript(url, callback) {
             var script = document.createElement("script");
             script.src = url;
             script.onload = callback;
             document.head.appendChild(script);
         }
-
+        
         loadScript("https://gstatic.com", function() {
             loadScript("https://gstatic.com", function() {
                 loadScript("main.js", function() {
-                    // 全てのファイルが完璧に読み込み終わったら、ボタンを「ゲームを読み込む」に変えて有効化
+                    // 全て小文字の "audioInitBtn" で確実にDOM要素を取得してボタンを有効化します
                     var btn = document.getElementById("audioInitBtn");
-                    btn.innerText = "ゲームを読み込む";
-                    btn.style.backgroundColor = "#1e90ff";
-                    btn.style.cursor = "pointer";
-                    btn.disabled = false;
+                    if (btn) {
+                        btn.innerText = "ゲームを読み込む";
+                        btn.style.backgroundColor = "#1e90ff";
+                        btn.style.cursor = "pointer";
+                        btn.disabled = false;
+                    }
                 });
             });
         });
     </script>
-</body>
-</html>
+    </body>
+    
+    </html>
