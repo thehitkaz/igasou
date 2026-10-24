@@ -5,207 +5,102 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>イガ走</title>
     <style>
-        body { margin: 0; padding: 0; background-color: #222; overflow: hidden; font-family: sans-serif; user-select: none; -webkit-user-select: none; }
-        #gameContainer { position: relative; width: 100%; max-width: 800px; margin: 0 auto; }
-        #gameCanvas { display: block; width: 100%; background-color: #87CEEB; }
-        #ui { position: absolute; top: 10px; left: 10px; color: white; font-size: 20px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); pointer-events: none; z-index: 10; display: none; }
-        #audioInitScreen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #222; display: flex; justify-content: center; align-items: center; z-index: 30; }
-        #audioInitBtn { padding: 15px 30px; font-size: 20px; font-weight: bold; color: white; background-color: #555; border: none; border-radius: 5px; cursor: not-allowed; }
-        #topScreen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(135, 206, 235, 1); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; display: none; }
-        #gameTitle { font-size: 44px; font-weight: bold; color: white; margin-bottom: 12px; text-shadow: 3px 3px 0px #ff4757, 5px 5px 0px rgba(0,0,0,0.2); text-align: center; letter-spacing: 4px; }
-        #guideContainer { background-color: rgba(0, 0, 0, 0.4); border-radius: 15px; padding: 12px; margin-bottom: 20px; width: 85%; max-width: 480px; color: white; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
-        .guide-item { display: flex; align-items: center; margin: 6px 0; font-size: 13px; font-weight: bold; }
-        .guide-img { width: 28px; height: 28px; margin-right: 15px; object-fit: contain; background-color: rgba(255,255,255,0.2); border-radius: 4px; }
-        .guide-text { flex: 1; text-shadow: 1px 1px 2px black; }
-        #startBtn { padding: 12px 45px; font-size: 22px; font-weight: bold; color: white; background-color: #ff4757; border: none; border-radius: 50px; box-shadow: 0 6px #ea2027, 0 10px 15px rgba(0,0,0,0.3); cursor: pointer; outline: none; transition: 0.1s; }
-        #startBtn:active { box-shadow: 0 2px #ea2027, 0 5px 10px rgba(0,0,0,0.3); transform: translateY(4px); }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #222;
+            overflow: hidden;
+            font-family: sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            background-color: #87CEEB;
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 10;
+            display: none;
+        }
+        /* 共通の画面オーバーレイ（トップ・オーディオ画面） */
+        .screen-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: #87CEEB;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+        #topScreen {
+            display: none; /* 最初はオーディオ画面を出すため非表示 */
+        }
+        .screen-title {
+            font-size: 36px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 3px 3px 0px #ff4757, 5px 5px 0px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        .action-btn {
+            padding: 15px 40px;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            background-color: #ff4757;
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 6px #ea2027, 0 10px 15px rgba(0,0,0,0.3);
+            cursor: pointer;
+            outline: none;
+            transition: 0.1s;
+        }
+        .action-btn:active {
+            box-shadow: 0 2px #ea2027, 0 5px 10px rgba(0,0,0,0.3);
+            transform: translateY(4px);
+        }
     </style>
-
-    <!-- 最も確実なCDN経由でのFirebase読み込み -->
-    <script src="https://cloudflare.com"></script>
-    <script src="https://cloudflare.com"></script>
 </head>
 <body>
     <div id="gameContainer">
+        <!-- スコア表示 -->
         <div id="ui">SCORE: <span id="score">0</span>m</div>
-        <div id="audioInitScreen"><button id="audioInitBtn" disabled>読み込み中...</button></div>
-        <div id="topScreen">
-            <div id="gameTitle">イガ走</div>
-            <div id="guideContainer">
-                <div class="guide-item"><img src="player.png" class="guide-img" alt="🏃‍♂️"><div class="guide-text"><span style="color: #fffa65;">2段ジャンプ</span> ： 2回タップでさらに高く跳べる！</div></div>
-                <div class="guide-item"><img src="coin.png" class="guide-img" alt="🪙"><div class="guide-text"><span style="color: #ffd32a;">スパイダー</span> ： ゲットするとスコア +15m！</div></div>
-                <div class="guide-item"><img src="enemy1.png" class="guide-img" alt="👾"><div class="guide-text"><span style="color: #ff4d4d;">かずき</span> ： 足場でじっと待ち構えているぞ！</div></div>
-                <div class="guide-item"><img src="enemy2.png" class="guide-img" alt="🛸"><div class="guide-text"><span style="color: #9b5de5;">いおり</span> ： フワフワ上下に動いてるぞ！</div></div>
-                <div class="guide-item"><img src="enemy3.png" class="guide-img" alt="🏃‍♂️"><div class="guide-text"><span style="color: #00f5d4;">せいや</span> ： 近づくと加速して突進してくるぞ！</div></div>
-                <div class="guide-item"><img src="enemy4.png" class="guide-img" alt="👹"><div class="guide-text"><span style="color: #f15bb5;">そうた</span> ： スコア100m以降に出現する超強敵！</div></div>
-            </div>
-            <button id="startBtn">走れ!!</button>
+        
+        <!-- 🔊 ブラウザの音声再生制限を解除するための初期画面 -->
+        <div id="audioInitScreen" class="screen-overlay" style="width: 100%; height: 100%;">
+            <div class="screen-title">音声の有効化</div>
+            <button id="audioInitBtn" class="action-btn">ゲームを読み込む</button>
         </div>
+
+        <!-- 🏠 タイトル画面 -->
+        <div id="topScreen" class="screen-overlay">
+            <div id="gameTitle" class="screen-title">イガ走</div>
+            <button id="startBtn" class="action-btn">走れ!!</button>
+        </div>
+        
+        <!-- ゲーム描画キャンバス -->
         <canvas id="gameCanvas"></canvas>
     </div>
-
-    <script>
-        // === ゲームプログラム本体 ===
-        const firebaseConfig = {
-          apiKey: "AIzaSyA9Tn9x4gEDNoZjfjyI6mbQSTZXxB5h_z4",
-          authDomain: "://firebaseapp.com",
-          projectId: "igasou-f3e0a",
-          storageBucket: "igasou-f3e0a.firebasestorage.app",
-          messagingSenderId: "500173103005",
-          appId: "1:500173103005:web:51d538dd7399939db75974",
-          measurementId: "G-249F6M0B1J"
-        };
-        
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        
-        const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
-        const scoreEl = document.getElementById("score"), uiEl = document.getElementById("ui");
-        const topScreenEl = document.getElementById("topScreen"), startBtn = document.getElementById("startBtn");
-        const audioInitScreen = document.getElementById("audioInitScreen"), audioInitBtn = document.getElementById("audioInitBtn");
-        
-        function resizeCanvas() {
-            const tw = Math.min(window.innerWidth, 800), th = Math.min(window.innerHeight, 450);
-            canvas.width = tw; canvas.height = th; topScreenEl.style.width = tw + "px"; topScreenEl.style.height = th + "px";
-        }
-        resizeCanvas(); window.addEventListener("resize", resizeCanvas);
-        
-        let gameState = "TITLE", score = 0, gameSpeed = 5, onlineRanking = [];
-        const player = { x: 100, y: 200, width: 60, height: 60, vy: 0, gravity: 0.6, jumpPower: -12, isGrounded: false, jumpCount: 0, img: new Image() };
-        player.img.src = "player.png";
-        
-        const titleBgm = new Audio("title_bgm.mp3"); titleBgm.loop = true;
-        const gameBgm = new Audio("game_bgm.mp3"); gameBgm.loop = true;
-        const jumpSe = new Audio("jump_se.mp3"), gameoverSe = new Audio("gameover_se.mp3"), coinSe = new Audio("coin_se.mp3");
-        
-        const coinImg = new Image(); coinImg.src = "coin.png";
-        const enemyImgs = [new Image(), new Image(), new Image(), new Image()];
-        enemyImgs.src = "enemy1.png"; enemyImgs.src = "enemy2.png"; enemyImgs.src = "enemy3.png"; enemyImgs.src = "enemy4.png";
-        
-        let platforms = [], coins = [], enemies = [], clouds = [];
-        function initClouds() { clouds = []; for(let i=0; i<4; i++) clouds.push({ x: Math.random()*canvas.width, y: Math.random()*100 + 30, speed: Math.random()*0.5 + 0.2, size: Math.random()*30 + 40 }); }
-        function initPlatforms() { platforms = [{ x: 0, y: canvas.height - 100, width: 400, height: 100 }]; coins = []; enemies = []; initClouds(); }
-        
-        audioInitBtn.addEventListener("click", () => { audioInitScreen.style.display = "none"; goToTitle(); loop(); });
-        function startGame() { topScreenEl.style.display = "none"; uiEl.style.display = "block"; try { titleBgm.pause(); titleBgm.currentTime = 0; gameBgm.play().catch(e => {}); } catch(e){} resetGame(); }
-        startBtn.addEventListener("click", (e) => { e.stopPropagation(); startGame(); });
-        startBtn.addEventListener("touchstart", (e) => { e.stopPropagation(); startGame(); });
-        
-        function handleInput() {
-            if (gameState === "PLAYING" && (player.isGrounded || player.jumpCount < 2)) { player.vy = player.jumpPower; player.isGrounded = false; player.jumpCount++; try { jumpSe.currentTime = 0; jumpSe.play().catch(e => {}); } catch(e){} }
-            else if (gameState === "GAMEOVER") goToTitle();
-        }
-        window.addEventListener("keydown", (e) => { if (e.code === "Space" || e.code === "ArrowUp") handleInput(); });
-        window.addEventListener("touchstart", (e) => { if (gameState !== "TITLE") { e.preventDefault(); handleInput(); } }, { passive: false });
-        window.addEventListener("mousedown", () => { if (gameState !== "TITLE") handleInput(); });
-        function generatePlatform() {
-            if (!platforms.length) return;
-            const last = platforms[platforms.length - 1];
-            const gap = Math.random() * 100 + 120, width = Math.random() * 150 + 150, y = Math.random() * 130 + canvas.height - 180;
-            const newPlat = { x: last.x + last.width + gap, y: y, width: width, height: canvas.height - y };
-            platforms.push(newPlat);
-            if (Math.random() < 0.3) coins.push({ x: newPlat.x + newPlat.width / 2 - 15, y: newPlat.y - 40, width: 30, height: 30, alive: true });
-            if (Math.random() < 0.2) {
-                let type = Math.floor(Math.random() * 4); if (score < 100 && type === 3) type = 0;
-                let ey = newPlat.y - 40, ew = 40, eh = 40;
-                if (type === 1) ey = newPlat.y - 80; if (type === 3) { ew = 65; eh = 65; ey = newPlat.y - 65; }
-                enemies.push({ type: type, x: newPlat.x + newPlat.width / 2 - ew / 2, y: ey, baseY: ey, width: ew, height: eh, angle: 0, triggered: false });
-            }
-        }
-
-        async function loadOnlineRanking() {
-            try {
-                const snap = await db.collection("leaderboard").orderBy("score", "desc").limit(10).get();
-                onlineRanking = [];
-                if (snap && !snap.empty) {
-                    snap.forEach((doc) => {
-                        if (doc && doc.exists) onlineRanking.push(doc.data());
-                    });
-                }
-            } catch (e) { console.error("ランキング読み込みエラー:", e); }
-        }
-
-        async function saveOnlineScore(finalScore) {
-            const fs = Math.floor(finalScore);
-            setTimeout(async () => {
-                let name = prompt(`🎉ゲームオーバー！スコア: ${fs}m\nランキングに登録する名前を入力してください`, "名無しランナー");
-                if (!name || name.trim() === "") name = "名無しランナー";
-                try {
-                    await db.collection("leaderboard").add({ name: name, score: fs, date: new Date() });
-                    await loadOnlineRanking();
-                } catch (e) { console.error("スコア保存エラー:", e); }
-            }, 100);
-        }
-
-        function goToTitle() { gameState = "TITLE"; document.getElementById("gameTitle").textContent = "イガ走"; startBtn.textContent = "走れ!!"; uiEl.style.display = "none"; topScreenEl.style.display = "flex"; try { gameBgm.pause(); gameBgm.currentTime = 0; titleBgm.play().catch(e => {}); } catch(e){} initPlatforms(); }
-        function resetGame() { score = 0; gameSpeed = 5; player.x = 100; player.y = 200; player.vy = 0; player.isGrounded = false; player.jumpCount = 0; initPlatforms(); gameState = "PLAYING"; }
-        function isColliding(r1, r2) { return r1.x < r2.x + r2.width && r1.x + r1.width > r2.x && r1.y < r2.y + r2.height && r1.y + r1.height > r2.y; }
-        function triggerGameOver() { gameState = "GAMEOVER"; uiEl.style.display = "none"; try { gameBgm.pause(); gameoverSe.currentTime = 0; gameoverSe.play().catch(e => {}); } catch(e){} saveOnlineScore(score); }
-
-        function update() {
-            clouds.forEach(c => { c.x -= c.speed; if(c.x + c.size * 2 < 0) { c.x = canvas.width; c.y = Math.random()*100 + 30; } });
-            if (gameState !== "PLAYING") return;
-            score += 0.1; scoreEl.innerText = Math.floor(score); gameSpeed = 5 + Math.floor(score / 50);
-            player.vy += player.gravity; player.y += player.vy;
-            let onPlatform = false;
-            if (platforms.length > 0 && platforms.x + platforms.width < 0) platforms.shift();
-            while (platforms.length < 5) generatePlatform();
-            platforms.forEach(plat => { plat.x -= gameSpeed; if (player.x < plat.x + plat.width && player.x + player.width > plat.x && player.y + player.height >= plat.y && player.y + player.height - player.vy <= plat.y + 12) { player.y = plat.y - player.height; player.vy = 0; onPlatform = true; player.jumpCount = 0; } });
-            player.isGrounded = onPlatform;
-            coins.forEach(coin => { coin.x -= gameSpeed; if (coin.alive && isColliding(player, coin)) { coin.alive = false; score += 15; try { coinSe.currentTime = 0; coinSe.play().catch(e => {}); } catch(e){} } });
-            coins = coins.filter(c => c.x + c.width > 0);
-            enemies.forEach(enemy => { enemy.x -= gameSpeed; if (enemy.type === 1) { enemy.angle += 0.04; enemy.y = enemy.baseY + Math.sin(enemy.angle) * 25; } else if (enemy.type === 2) { if (!enemy.triggered && enemy.x - player.x < 250) enemy.triggered = true; if (enemy.triggered) enemy.x -= 1.5; } if (isColliding(player, enemy)) triggerGameOver(); });
-            enemies = enemies.filter(e => e.x + e.width > 0);
-            if (player.y > canvas.height) triggerGameOver();
-        }
-
-        function draw() {
-            ctx.fillStyle = "#87CEEB"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-            clouds.forEach(c => { ctx.beginPath(); ctx.arc(c.x, c.y, c.size * 0.4, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(c.x + c.size * 0.3, c.y - c.size * 0.1, c.size * 0.5, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(c.x + c.size * 0.6, c.y, c.size * 0.4, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(c.x, c.y - c.size * 0.1, c.size * 0.6, c.size * 0.4); });
-            ctx.fillStyle = "#2ed573"; platforms.forEach(plat => { ctx.fillRect(plat.x, plat.y, plat.width, plat.height); ctx.fillStyle = "#8B4513"; ctx.fillRect(plat.x, plat.y + 15, plat.width, plat.height - 15); ctx.fillStyle = "#2ed573"; });
-            
-            if (gameState !== "TITLE") { 
-                coins.forEach(coin => { 
-                    if (coin.alive) {
-                        if (coinImg.complete && coinImg.naturalWidth !== 0) ctx.drawImage(coinImg, coin.x, coin.y, coin.width, coin.height);
-                        else { ctx.fillStyle = "#ffd32a"; ctx.beginPath(); ctx.arc(coin.x + 15, coin.y + 15, 12, 0, Math.PI * 2); ctx.fill(); }
-                    }
-                }); 
-                enemies.forEach(enemy => { 
-                    const img = enemyImgs[enemy.type];
-                    if (img && img.complete && img.naturalWidth !== 0) ctx.drawImage(img, enemy.x, enemy.y, enemy.width, enemy.height);
-                    else { ctx.fillStyle = enemy.type === 3 ? "#f15bb5" : "#ff4d4d"; ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height); }
-                }); 
-                if (player.img.complete && player.img.naturalWidth !== 0) ctx.drawImage(player.img, player.x, player.y, player.width, player.height);
-                else { ctx.fillStyle = "#ff4757"; ctx.fillRect(player.x, player.y, player.width, player.height); }
-            }
-            if (gameState === "GAMEOVER") {
-                ctx.fillStyle = "rgba(0, 0, 0, 0.75)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = "#ff4757"; ctx.font = "bold 26px sans-serif"; ctx.textAlign = "center"; ctx.fillText("GAME OVER", canvas.width / 2, 40);
-                ctx.fillStyle = "white"; ctx.font = "bold 16px sans-serif"; ctx.fillText(`今回のスコア: ${Math.floor(score)}m`, canvas.width / 2, 70); ctx.fillText("🏆 全世界オンライン TOP 10 🏆", canvas.width / 2, 110);
-                ctx.font = "14px monospace";
-                onlineRanking.forEach((item, index) => {
-                    const y = 140 + index * 23; let b = `${index + 1}位`; if (index === 0) b = "🥇1位"; if (index === 1) b = "🥈2位"; if (index === 2) b = "🥉3位";
-                    ctx.textAlign = "right"; ctx.fillText(`${b}  ${item.name}`, canvas.width / 2 - 20, y);
-                    ctx.textAlign = "left"; ctx.fillText(` : ${item.score}m`, canvas.width / 2 - 10, y);
-                });
-                ctx.fillStyle = "#fffa65"; ctx.font = "bold 14px sans-serif"; ctx.textAlign = "center"; ctx.fillText("画面をタップ / クリックでタイトルへ", canvas.width / 2, canvas.height - 20);
-            }
-        }
-        function loop() { update(); draw(); requestAnimationFrame(loop); }
-
-        // 💡 起動処理：外部ファイルのダウンロード完了を待たずに即時ボタンを有効化します
-        window.addEventListener("DOMContentLoaded", () => {
-            var btn = document.getElementById("audioInitBtn");
-            if (btn) {
-                btn.innerText = "ゲームを読み込む";
-                btn.style.backgroundColor = "#1e90ff";
-                btn.style.cursor = "pointer";
-                btn.disabled = false;
-            }
-            loadOnlineRanking();
-        });
-    </script>
+    
+    <!-- ⚠️ Firebase関連の script タグはすべて削除しました -->
+    <script src="main.js"></script>
 </body>
 </html>

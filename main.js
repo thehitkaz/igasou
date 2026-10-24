@@ -1,19 +1,4 @@
-// === 1. Firebaseの互換設定（インポート文を完全に削除しました） ===
-const firebaseConfig = {
-  apiKey: "AIzaSyA9Tn9x4gEDNoZjfjyI6mbQSTZXxB5h_z4",
-  authDomain: "://firebaseapp.com",
-  projectId: "igasou-f3e0a",
-  storageBucket: "igasou-f3e0a.firebasestorage.app",
-  messagingSenderId: "500173103005",
-  appId: "1:500173103005:web:51d538dd7399939db75974",
-  measurementId: "G-249F6M0B1J"
-};
-
-// HTML側で読み込んだFirebaseをそのまま使用します
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-// === 2. DOM要素とキャンバス初期化 ===
+// === 1. DOM要素とキャンバス初期化 ===
 const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
 const scoreEl = document.getElementById("score"), uiEl = document.getElementById("ui");
 const topScreenEl = document.getElementById("topScreen"), startBtn = document.getElementById("startBtn");
@@ -25,27 +10,43 @@ function resizeCanvas() {
 }
 resizeCanvas(); window.addEventListener("resize", resizeCanvas);
 
-let gameState = "TITLE", score = 0, gameSpeed = 5, onlineRanking = [];
+// ゲーム状態管理用の変数
+let gameState = "TITLE", score = 0, gameSpeed = 5;
 const player = { x: 100, y: 200, width: 60, height: 60, vy: 0, gravity: 0.6, jumpPower: -12, isGrounded: false, jumpCount: 0, img: new Image() };
 player.img.src = "player.png";
 
+// 音源のアセット
 const titleBgm = new Audio("title_bgm.mp3"); titleBgm.loop = true;
 const gameBgm = new Audio("game_bgm.mp3"); gameBgm.loop = true;
 const jumpSe = new Audio("jump_se.mp3"), gameoverSe = new Audio("gameover_se.mp3"), coinSe = new Audio("coin_se.mp3");
 
+// 画像のアセット
 const coinImg = new Image(); coinImg.src = "coin.png";
 const enemyImgs = [new Image(), new Image(), new Image(), new Image()];
 enemyImgs[0].src = "enemy1.png"; enemyImgs[1].src = "enemy2.png"; enemyImgs[2].src = "enemy3.png"; enemyImgs[3].src = "enemy4.png";
 
 let platforms = [], coins = [], enemies = [], clouds = [];
+
+// 演出用の雲の初期化
 function initClouds() { clouds = []; for(let i=0; i<4; i++) clouds.push({ x: Math.random()*canvas.width, y: Math.random()*100 + 30, speed: Math.random()*0.5 + 0.2, size: Math.random()*30 + 40 }); }
+
+// ステージの初期化
 function initPlatforms() { platforms = [{ x: 0, y: canvas.height - 100, width: 400, height: 100 }]; coins = []; enemies = []; initClouds(); }
 
-audioInitBtn.addEventListener("click", () => { audioInitScreen.style.display = "none"; goToTitle(); loop(); });
+// 最初のオーディオ有効化ボタンを押した時の処理
+if (audioInitBtn) {
+    audioInitBtn.addEventListener("click", () => { audioInitScreen.style.display = "none"; goToTitle(); loop(); });
+} else {
+    // もしHTMLにaudioInitScreenがない場合はそのままタイトルへ移行してループを開始
+    window.addEventListener("load", () => { goToTitle(); loop(); });
+}
+
+// ゲーム開始処理
 function startGame() { topScreenEl.style.display = "none"; uiEl.style.display = "block"; try { titleBgm.pause(); titleBgm.currentTime = 0; gameBgm.play().catch(e => {}); } catch(e){} resetGame(); }
 startBtn.addEventListener("click", (e) => { e.stopPropagation(); startGame(); });
 startBtn.addEventListener("touchstart", (e) => { e.stopPropagation(); startGame(); });
 
+// 操作入力処理（2段ジャンプ対応）
 function handleInput() {
     if (gameState === "PLAYING" && (player.isGrounded || player.jumpCount < 2)) { player.vy = player.jumpPower; player.isGrounded = false; player.jumpCount++; try { jumpSe.currentTime = 0; jumpSe.play().catch(e => {}); } catch(e){} }
     else if (gameState === "GAMEOVER") goToTitle();
@@ -53,6 +54,8 @@ function handleInput() {
 window.addEventListener("keydown", (e) => { if (e.code === "Space" || e.code === "ArrowUp") handleInput(); });
 window.addEventListener("touchstart", (e) => { if (gameState !== "TITLE") { e.preventDefault(); handleInput(); } }, { passive: false });
 window.addEventListener("mousedown", () => { if (gameState !== "TITLE") handleInput(); });
+
+// 地形・コイン・敵の自動生成
 function generatePlatform() {
     if (!platforms.length) return;
     const last = platforms[platforms.length - 1];
@@ -68,42 +71,34 @@ function generatePlatform() {
     }
 }
 
-async function loadOnlineRanking() {
-    try {
-        const snap = await db.collection("leaderboard").orderBy("score", "desc").limit(10).get();
-        onlineRanking = [];
-        if (snap && !snap.empty) {
-            snap.forEach((doc) => {
-                if (doc && doc.exists) onlineRanking.push(doc.data());
-            });
-        }
-    } catch (e) { console.error("ランキング読み込みエラー:", e); }
-}
-
-async function saveOnlineScore(finalScore) {
-    const fs = Math.floor(finalScore);
-    setTimeout(async () => {
-        let name = prompt(`🎉ゲームオーバー！スコア: ${fs}m\nランキングに登録する名前を入力してください`, "名無しランナー");
-        if (!name || name.trim() === "") name = "名無しランナー";
-        try {
-            await db.collection("leaderboard").add({ name: name, score: fs, date: new Date() });
-            await loadOnlineRanking();
-        } catch (e) { console.error("スコア保存エラー:", e); }
-    }, 100);
-}
-
+// タイトル画面へ戻る処理
 function goToTitle() { gameState = "TITLE"; document.getElementById("gameTitle").textContent = "イガ走"; startBtn.textContent = "走れ!!"; uiEl.style.display = "none"; topScreenEl.style.display = "flex"; try { gameBgm.pause(); gameBgm.currentTime = 0; titleBgm.play().catch(e => {}); } catch(e){} initPlatforms(); }
-function resetGame() { score = 0; gameSpeed = 5; player.x = 100; player.y = 200; player.vy = 0; player.isGrounded = false; player.jumpCount = 0; initPlatforms(); gameState = "PLAYING"; }
-function isColliding(r1, r2) { return r1.x < r2.x + r2.width && r1.x + r1.width > r2.x && r1.y < r2.y + r2.height && r1.y + r1.height > r2.y; }
-function triggerGameOver() { gameState = "GAMEOVER"; uiEl.style.display = "none"; try { gameBgm.pause(); gameoverSe.currentTime = 0; gameoverSe.play().catch(e => {}); } catch(e){} saveOnlineScore(score); }
 
+// ゲームのリセット処理
+function resetGame() { score = 0; gameSpeed = 5; player.x = 100; player.y = 200; player.vy = 0; player.isGrounded = false; player.jumpCount = 0; initPlatforms(); gameState = "PLAYING"; }
+
+// 衝突判定の共通関数
+function isColliding(r1, r2) { return r1.x < r2.x + r2.width && r1.x + r1.width > r2.x && r1.y < r2.y + r2.height && r1.y + r1.height > r2.y; }
+
+// ゲームオーバー処理（Firebaseへ送信していたアラートやプロンプトを削除）
+function triggerGameOver() { 
+    gameState = "GAMEOVER"; 
+    uiEl.style.display = "none"; 
+    try { 
+        gameBgm.pause(); 
+        gameoverSe.currentTime = 0; 
+        gameoverSe.play().catch(e => {}); 
+    } catch(e){} 
+}
+
+// 物理計算と状態の更新
 function update() {
     clouds.forEach(c => { c.x -= c.speed; if(c.x + c.size * 2 < 0) { c.x = canvas.width; c.y = Math.random()*100 + 30; } });
     if (gameState !== "PLAYING") return;
     score += 0.1; scoreEl.innerText = Math.floor(score); gameSpeed = 5 + Math.floor(score / 50);
     player.vy += player.gravity; player.y += player.vy;
     let onPlatform = false;
-    if (platforms.length > 0 && platforms.x + platforms.width < 0) platforms.shift();
+    if (platforms.length > 0 && platforms[0].x + platforms[0].width < 0) platforms.shift();
     while (platforms.length < 5) generatePlatform();
     platforms.forEach(plat => { plat.x -= gameSpeed; if (player.x < plat.x + plat.width && player.x + player.width > plat.x && player.y + player.height >= plat.y && player.y + player.height - player.vy <= plat.y + 12) { player.y = plat.y - player.height; player.vy = 0; onPlatform = true; player.jumpCount = 0; } });
     player.isGrounded = onPlatform;
@@ -114,6 +109,7 @@ function update() {
     if (player.y > canvas.height) triggerGameOver();
 }
 
+// ゲーム画面の描画
 function draw() {
     ctx.fillStyle = "#87CEEB"; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
@@ -134,18 +130,15 @@ function draw() {
         if (player.img.complete && player.img.naturalWidth !== 0) ctx.drawImage(player.img, player.x, player.y, player.width, player.height);
         else { ctx.fillStyle = "#ff4757"; ctx.fillRect(player.x, player.y, player.width, player.height); }
     }
+    
+    // ゲームオーバー画面（オンラインランキングのテキスト表示を廃止し、今回のスコアのみすっきり表示）
     if (gameState === "GAMEOVER") {
         ctx.fillStyle = "rgba(0, 0, 0, 0.75)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#ff4757"; ctx.font = "bold 26px sans-serif"; ctx.textAlign = "center"; ctx.fillText("GAME OVER", canvas.width / 2, 40);
-        ctx.fillStyle = "white"; ctx.font = "bold 16px sans-serif"; ctx.fillText(`今回のスコア: ${Math.floor(score)}m`, canvas.width / 2, 70); ctx.fillText("🏆 全世界オンライン TOP 10 🏆", canvas.width / 2, 110);
-        ctx.font = "14px monospace";
-        onlineRanking.forEach((item, index) => {
-            const y = 140 + index * 23; let b = `${index + 1}位`; if (index === 0) b = "🥇1位"; if (index === 1) b = "🥈2位"; if (index === 2) b = "🥉3位";
-            ctx.textAlign = "right"; ctx.fillText(`${b}  ${item.name}`, canvas.width / 2 - 20, y);
-            ctx.textAlign = "left"; ctx.fillText(` : ${item.score}m`, canvas.width / 2 - 10, y);
-        });
-        ctx.fillStyle = "#fffa65"; ctx.font = "bold 14px sans-serif"; ctx.textAlign = "center"; ctx.fillText("画面をタップ / クリックでタイトルへ", canvas.width / 2, canvas.height - 20);
+        ctx.fillStyle = "#ff4757"; ctx.font = "bold 32px sans-serif"; ctx.textAlign = "center"; ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 30);
+        ctx.fillStyle = "white"; ctx.font = "bold 22px sans-serif"; ctx.fillText(`今回のスコア: ${Math.floor(score)}m`, canvas.width / 2, canvas.height / 2 + 20);
+        ctx.fillStyle = "#fffa65"; ctx.font = "bold 16px sans-serif"; ctx.textAlign = "center"; ctx.fillText("画面をタップ / クリックでタイトルへ", canvas.width / 2, canvas.height - 40);
     }
 }
+
+// ゲームの無限ループ処理
 function loop() { update(); draw(); requestAnimationFrame(loop); }
-loadOnlineRanking();
