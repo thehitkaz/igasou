@@ -20,15 +20,11 @@
         #startBtn { padding: 12px 45px; font-size: 22px; font-weight: bold; color: white; background-color: #ff4757; border: none; border-radius: 50px; box-shadow: 0 6px #ea2027, 0 10px 15px rgba(0,0,0,0.3); cursor: pointer; outline: none; transition: 0.1s; }
         #startBtn:active { box-shadow: 0 2px #ea2027, 0 5px 10px rgba(0,0,0,0.3); transform: translateY(4px); }
     </style>
-
-    <!-- 💡 インポートマップを廃止し、グローバルCDNスクリプトで直接確実に読み込みます -->
-    <script src="https://gstatic.com"></script>
-    <script src="https://gstatic.com"></script>
 </head>
 <body>
     <div id="gameContainer">
         <div id="ui">SCORE: <span id="score">0</span>m</div>
-        <div id="audioInitScreen"><button id="audioInitBtn">ゲームを読み込む</button></div>
+        <div id="audioInitScreen"><button id="audioInitBtn" disabled style="background-color: #555; cursor: not-allowed;">読み込み中...</button></div>
         <div id="topScreen">
             <div id="gameTitle">イガ走</div>
             <div id="guideContainer">
@@ -43,8 +39,28 @@
         </div>
         <canvas id="gameCanvas"></canvas>
     </div>
-    
-    <!-- 💡 通常のスクリプトとして読み込みます -->
-    <script src="main.js"></script>
+
+    <script>
+        // 💡 対策：Firebaseのダウンロードを完全に1つずつ順番に待ちます
+        function loadScript(url, callback) {
+            var script = document.createElement("script");
+            script.src = url;
+            script.onload = callback;
+            document.head.appendChild(script);
+        }
+
+        loadScript("https://gstatic.com", function() {
+            loadScript("https://gstatic.com", function() {
+                loadScript("main.js", function() {
+                    // 全てのファイルが完璧に読み込み終わったら、ボタンを「ゲームを読み込む」に変えて有効化
+                    var btn = document.getElementById("audioInitBtn");
+                    btn.innerText = "ゲームを読み込む";
+                    btn.style.backgroundColor = "#1e90ff";
+                    btn.style.cursor = "pointer";
+                    btn.disabled = false;
+                });
+            });
+        });
+    </script>
 </body>
 </html>
