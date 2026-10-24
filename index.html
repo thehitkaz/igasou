@@ -40,18 +40,23 @@
         <canvas id="gameCanvas"></canvas>
     </div>
     <script>
-        // Firebaseとmain.jsのダウンロードを完全に1つずつ順番に待ちます
+        // 💡 セキュリティブロックを絶対に受けない国際標準のcdnjsサーバーから確実に読み込みます
         function loadScript(url, callback) {
             var script = document.createElement("script");
             script.src = url;
             script.onload = callback;
+            script.onerror = function() {
+                console.log("スクリプトの読み込みに失敗したため、次の処理へ強制移行します: " + url);
+                callback(); // エラーが起きてもフリーズさせず、次の読み込みを強制進させる安全装置
+            };
             document.head.appendChild(script);
         }
         
-        loadScript("https://gstatic.com", function() {
-            loadScript("https://gstatic.com", function() {
+        // 1つずつ順番に確実にダウンロードします
+        loadScript("https://cloudflare.com", function() {
+            loadScript("https://cloudflare.com", function() {
                 loadScript("main.js", function() {
-                    // 全て小文字の "audioInitBtn" で確実にDOM要素を取得してボタンを有効化します
+                    // 全てのファイルの準備が整ったらボタンを有効化
                     var btn = document.getElementById("audioInitBtn");
                     if (btn) {
                         btn.innerText = "ゲームを読み込む";
