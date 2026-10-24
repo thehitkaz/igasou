@@ -96,7 +96,7 @@ function update() {
     score += 0.1; scoreEl.innerText = Math.floor(score); gameSpeed = 5 + Math.floor(score / 50);
     player.vy += player.gravity; player.y += player.vy;
     let onPlatform = false;
-    if (platforms.length > 0 && platforms[0].x + platforms[0].width < 0) platforms.shift();
+    if (platforms.length > 0 && platforms.x + platforms.width < 0) platforms.shift();
     while (platforms.length < 5) generatePlatform();
     platforms.forEach(plat => { plat.x -= gameSpeed; if (player.x < plat.x + plat.width && player.x + player.width > plat.x && player.y + player.height >= plat.y && player.y + player.height - player.vy <= plat.y + 12) { player.y = plat.y - player.height; player.vy = 0; onPlatform = true; player.jumpCount = 0; } });
     player.isGrounded = onPlatform;
@@ -112,7 +112,23 @@ function draw() {
     ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
     clouds.forEach(c => { ctx.beginPath(); ctx.arc(c.x, c.y, c.size * 0.4, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(c.x + c.size * 0.3, c.y - c.size * 0.1, c.size * 0.5, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(c.x + c.size * 0.6, c.y, c.size * 0.4, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(c.x, c.y - c.size * 0.1, c.size * 0.6, c.size * 0.4); });
     ctx.fillStyle = "#2ed573"; platforms.forEach(plat => { ctx.fillRect(plat.x, plat.y, plat.width, plat.height); ctx.fillStyle = "#8B4513"; ctx.fillRect(plat.x, plat.y + 15, plat.width, plat.height - 15); ctx.fillStyle = "#2ed573"; });
-    if (gameState !== "TITLE") { coins.forEach(coin => { if (coin.alive) ctx.drawImage(coinImg, coin.x, coin.y, coin.width, coin.height); }); enemies.forEach(enemy => { ctx.drawImage(enemyImgs[enemy.type], enemy.x, enemy.y, enemy.width, enemy.height); }); ctx.drawImage(player.img, player.x, player.y, player.width, player.height); }
+    
+    // 💡 修正：画像ファイルのエラー対策（読み込めない場合は色付きの四角形で代用）
+    if (gameState !== "TITLE") { 
+        coins.forEach(coin => { 
+            if (coin.alive) {
+                if (coinImg.complete && coinImg.naturalWidth !== 0) ctx.drawImage(coinImg, coin.x, coin.y, coin.width, coin.height);
+                else { ctx.fillStyle = "#ffd32a"; ctx.beginPath(); ctx.arc(coin.x + 15, coin.y + 15, 12, 0, Math.PI * 2); ctx.fill(); }
+            }
+        }); 
+        enemies.forEach(enemy => { 
+            const img = enemyImgs[enemy.type];
+            if (img && img.complete && img.naturalWidth !== 0) ctx.drawImage(img, enemy.x, enemy.y, enemy.width, enemy.height);
+            else { ctx.fillStyle = enemy.type === 3 ? "#f15bb5" : "#ff4d4d"; ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height); }
+        }); 
+        if (player.img.complete && player.img.naturalWidth !== 0) ctx.drawImage(player.img, player.x, player.y, player.width, player.height);
+        else { ctx.fillStyle = "#ff4757"; ctx.fillRect(player.x, player.y, player.width, player.height); }
+    }
     if (gameState === "GAMEOVER") {
         ctx.fillStyle = "rgba(0, 0, 0, 0.75)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "#ff4757"; ctx.font = "bold 26px sans-serif"; ctx.textAlign = "center"; ctx.fillText("GAME OVER", canvas.width / 2, 40);
