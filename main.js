@@ -1,6 +1,4 @@
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "firebase/firestore";
-
+// === 1. Firebaseの互換読み込みと設定 ===
 const firebaseConfig = {
   apiKey: "AIzaSyA9Tn9x4gEDNoZjfjyI6mbQSTZXxB5h_z4",
   authDomain: "://firebaseapp.com",
@@ -10,7 +8,12 @@ const firebaseConfig = {
   appId: "1:500173103005:web:51d538dd7399939db75974",
   measurementId: "G-249F6M0B1J"
 };
-const app = initializeApp(firebaseConfig), db = getFirestore(app);
+
+// 💡 グローバル変数から確実に初期化するため、インポートエラーが絶対に起きません
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// === 2. DOM要素とキャンバス初期化 ===
 const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
 const scoreEl = document.getElementById("score"), uiEl = document.getElementById("ui");
 const topScreenEl = document.getElementById("topScreen"), startBtn = document.getElementById("startBtn");
@@ -32,7 +35,7 @@ const jumpSe = new Audio("jump_se.mp3"), gameoverSe = new Audio("gameover_se.mp3
 
 const coinImg = new Image(); coinImg.src = "coin.png";
 const enemyImgs = [new Image(), new Image(), new Image(), new Image()];
-enemyImgs[0].src = "enemy1.png"; enemyImgs[1].src = "enemy2.png"; enemyImgs[2].src = "enemy3.png"; enemyImgs[3].src = "enemy4.png";
+enemyImgs.src = "enemy1.png"; enemyImgs.src = "enemy2.png"; enemyImgs.src = "enemy3.png"; enemyImgs.src = "enemy4.png";
 
 let platforms = [], coins = [], enemies = [], clouds = [];
 function initClouds() { clouds = []; for(let i=0; i<4; i++) clouds.push({ x: Math.random()*canvas.width, y: Math.random()*100 + 30, speed: Math.random()*0.5 + 0.2, size: Math.random()*30 + 40 }); }
@@ -67,10 +70,15 @@ function generatePlatform() {
 
 async function loadOnlineRanking() {
     try {
-        const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
-        const snap = await getDocs(q); onlineRanking = [];
-        if (snap && !snap.empty) snap.forEach((doc) => doc && doc.data && onlineRanking.push(doc.data()));
-    } catch (e) { console.error(e); }
+        // 💡 互換方式（Compat）のクエリ記述に修正し、ランキングを確実に取得します
+        const snap = await db.collection("leaderboard").orderBy("score", "desc").limit(10).get();
+        onlineRanking = [];
+        if (snap && !snap.empty) {
+            snap.forEach((doc) => {
+                if (doc && doc.exists) onlineRanking.push(doc.data());
+            });
+        }
+    } catch (e) { console.error("ランキング読み込みエラー:", e); }
 }
 
 async function saveOnlineScore(finalScore) {
@@ -79,9 +87,9 @@ async function saveOnlineScore(finalScore) {
         let name = prompt(`🎉ゲームオーバー！スコア: ${fs}m\nランキングに登録する名前を入力してください`, "名無しランナー");
         if (!name || name.trim() === "") name = "名無しランナー";
         try {
-            await addDoc(collection(db, "leaderboard"), { name: name, score: fs, date: new Date() });
+            await db.collection("leaderboard").add({ name: name, score: fs, date: new Date() });
             await loadOnlineRanking();
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("スコア保存エラー:", e); }
     }, 100);
 }
 
@@ -96,7 +104,7 @@ function update() {
     score += 0.1; scoreEl.innerText = Math.floor(score); gameSpeed = 5 + Math.floor(score / 50);
     player.vy += player.gravity; player.y += player.vy;
     let onPlatform = false;
-    if (platforms.length > 0 && platforms.x + platforms.width < 0) platforms.shift();
+    if (platforms.length > 0 && platforms[0].x + platforms[0].width < 0) platforms.shift();
     while (platforms.length < 5) generatePlatform();
     platforms.forEach(plat => { plat.x -= gameSpeed; if (player.x < plat.x + plat.width && player.x + player.width > plat.x && player.y + player.height >= plat.y && player.y + player.height - player.vy <= plat.y + 12) { player.y = plat.y - player.height; player.vy = 0; onPlatform = true; player.jumpCount = 0; } });
     player.isGrounded = onPlatform;
@@ -112,8 +120,6 @@ function draw() {
     ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
     clouds.forEach(c => { ctx.beginPath(); ctx.arc(c.x, c.y, c.size * 0.4, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(c.x + c.size * 0.3, c.y - c.size * 0.1, c.size * 0.5, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(c.x + c.size * 0.6, c.y, c.size * 0.4, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(c.x, c.y - c.size * 0.1, c.size * 0.6, c.size * 0.4); });
     ctx.fillStyle = "#2ed573"; platforms.forEach(plat => { ctx.fillRect(plat.x, plat.y, plat.width, plat.height); ctx.fillStyle = "#8B4513"; ctx.fillRect(plat.x, plat.y + 15, plat.width, plat.height - 15); ctx.fillStyle = "#2ed573"; });
-    
-    // 💡 修正：画像ファイルのエラー対策（読み込めない場合は色付きの四角形で代用）
     if (gameState !== "TITLE") { 
         coins.forEach(coin => { 
             if (coin.alive) {
@@ -139,7 +145,8 @@ function draw() {
             ctx.textAlign = "right"; ctx.fillText(`${b}  ${item.name}`, canvas.width / 2 - 20, y);
             ctx.textAlign = "left"; ctx.fillText(` : ${item.score}m`, canvas.width / 2 - 10, y);
         });
-        ctx.fillStyle = "#fffa65"; ctx.font = "bold 14px sans-serif"; ctx.textAlign = "center"; ctx.fillText("画面をタップ / クリックでタイトルへ", canvas.width / 2, canvas.height - 20);
+        ctx.fillStyle = "#fffa65"; ctx.font = "bold 14px sans-serif"; ctx.textAlign = "center"; 
+        ctx.fillText("画面をタップ / クリックでタイトルへ", canvas.width / 2, canvas.height - 20);
     }
 }
 function loop() { update(); draw(); requestAnimationFrame(loop); }

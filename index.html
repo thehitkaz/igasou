@@ -20,14 +20,10 @@
         #startBtn { padding: 12px 45px; font-size: 22px; font-weight: bold; color: white; background-color: #ff4757; border: none; border-radius: 50px; box-shadow: 0 6px #ea2027, 0 10px 15px rgba(0,0,0,0.3); cursor: pointer; outline: none; transition: 0.1s; }
         #startBtn:active { box-shadow: 0 2px #ea2027, 0 5px 10px rgba(0,0,0,0.3); transform: translateY(4px); }
     </style>
-    <script type="importmap">
-      {
-        "imports": {
-          "firebase/app": "https://gstatic.com",
-          "firebase/firestore": "https://gstatic.com"
-        }
-      }
-    </script>
+
+    <!-- 💡 インポートマップを廃止し、グローバルCDNスクリプトで直接確実に読み込みます -->
+    <script src="https://gstatic.com"></script>
+    <script src="https://gstatic.com"></script>
 </head>
 <body>
     <div id="gameContainer">
@@ -47,6 +43,8 @@
         </div>
         <canvas id="gameCanvas"></canvas>
     </div>
-    <script type="module" src="main.js"></script>
+    
+    <!-- 💡 通常のスクリプトとして読み込みます -->
+    <script src="main.js"></script>
 </body>
 </html>
