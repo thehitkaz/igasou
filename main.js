@@ -172,6 +172,12 @@ function gameOver() {
     topScreenEl.style.display = "flex";
     instructionContainer.style.display = "none"; 
     
+    // ゲームオーバー音の再生
+    try {
+        if (gameoverSe.readyState >= 2) { gameoverSe.currentTime = 0; }
+        gameoverSe.play().catch(e => {});
+    } catch (e) {}
+
     const lowestScore = cachedRanking.length < 10 ? 0 : cachedRanking[cachedRanking.length - 1].score;
     const isRankIn = cachedRanking.length < 10 || score > lowestScore;
 
